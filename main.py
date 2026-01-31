@@ -241,6 +241,76 @@ def configure_api_key_via_ssh(ip_address: str, anthropic_key: str) -> bool:
 
         # Add the API key
         stdin, stdout, stderr = ssh.exec_command(f"echo 'ANTHROPIC_API_KEY={anthropic_key}' >> /opt/clawdbot.env")
+
+        # Enable ALL features by default for dashboard access
+        logger.info("Enabling all features for dashboard...")
+
+        features_to_enable = [
+            # Web login and dashboard features
+            ("WEB_LOGIN_ENABLED", "true"),
+            ("ENABLE_WEB_CHANNEL_LOGIN", "true"),
+            ("DASHBOARD_ENABLED", "true"),
+            ("WEB_UI_ENABLED", "true"),
+
+            # WhatsApp
+            ("WHATSAPP_ENABLED", "true"),
+            ("WHATSAPP_WEB_ENABLED", "true"),
+            ("WHATSAPP_QR_LOGIN", "true"),
+
+            # Telegram
+            ("TELEGRAM_ENABLED", "true"),
+            ("TELEGRAM_WEB_LOGIN", "true"),
+
+            # Discord
+            ("DISCORD_ENABLED", "true"),
+            ("DISCORD_WEB_LOGIN", "true"),
+
+            # Slack
+            ("SLACK_ENABLED", "true"),
+            ("SLACK_WEB_LOGIN", "true"),
+
+            # Other messaging platforms
+            ("SIGNAL_ENABLED", "true"),
+            ("MATRIX_ENABLED", "true"),
+            ("IRC_ENABLED", "true"),
+
+            # Email
+            ("EMAIL_ENABLED", "true"),
+            ("GMAIL_ENABLED", "true"),
+            ("SMTP_ENABLED", "true"),
+            ("IMAP_ENABLED", "true"),
+
+            # Productivity integrations
+            ("GITHUB_ENABLED", "true"),
+            ("NOTION_ENABLED", "true"),
+            ("GOOGLE_CALENDAR_ENABLED", "true"),
+            ("GOOGLE_DRIVE_ENABLED", "true"),
+
+            # AI features
+            ("WEB_BROWSING_ENABLED", "true"),
+            ("FILE_ACCESS_ENABLED", "true"),
+            ("CODE_EXECUTION_ENABLED", "true"),
+            ("AUTONOMOUS_MODE_ENABLED", "true"),
+
+            # MCP (Model Context Protocol) servers
+            ("MCP_ENABLED", "true"),
+            ("MCP_FILESYSTEM_ENABLED", "true"),
+            ("MCP_BROWSER_ENABLED", "true"),
+            ("MCP_GITHUB_ENABLED", "true"),
+
+            # Other features
+            ("WEBHOOKS_ENABLED", "true"),
+            ("API_ACCESS_ENABLED", "true"),
+            ("SCHEDULED_TASKS_ENABLED", "true"),
+            ("VOICE_ENABLED", "true"),
+            ("IMAGE_GENERATION_ENABLED", "true"),
+        ]
+
+        for key, value in features_to_enable:
+            ssh.exec_command(f"sed -i '/{key}/d' /opt/clawdbot.env")
+            ssh.exec_command(f"echo '{key}={value}' >> /opt/clawdbot.env")
+
+        logger.info("All features enabled for dashboard")
         stderr_output = stderr.read().decode().strip()
         if stderr_output:
             logger.error(f"Error adding API key: {stderr_output}")
