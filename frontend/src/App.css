@@ -1552,12 +1552,20 @@ a:hover {
 
   .steps {
     flex-direction: column;
-    gap: 32px;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .step {
+    text-align: center;
+    flex: none;
+    width: 100%;
+    max-width: 280px;
   }
 
   .step-arrow {
     transform: rotate(90deg);
-    margin: 0;
+    margin: -8px 0;
   }
 
   .cta-content {
