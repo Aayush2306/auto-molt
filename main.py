@@ -58,10 +58,6 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AutoClaw - OpenClaw Provisioning Platform")
 
-logger.info(f"Starting AutoClaw API...")
-logger.info(f"Database URL: {DATABASE_URL[:30]}...")
-logger.info(f"Frontend URL: {FRONTEND_URL}")
-
 # CORS middleware for frontend
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 ALLOWED_ORIGINS = [
@@ -752,6 +748,8 @@ async def check_expired_deployments():
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on app startup"""
+    logger.info("Starting AutoClaw API...")
+    logger.info(f"Frontend URL: {FRONTEND_URL}")
     asyncio.create_task(check_expired_deployments())
     logger.info("Started expired deployment checker background task")
 
