@@ -6,7 +6,7 @@ import paramiko
 import time
 import secrets
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 import asyncio
 import logging
@@ -48,6 +48,7 @@ class DeploymentModel(Base):
     droplet_id = Column(Integer, nullable=True)
     ip_address = Column(String, nullable=True)
     dashboard_url = Column(String, nullable=True)
+    expires_at = Column(DateTime, nullable=True)  # 7 days after creation
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -533,6 +534,7 @@ async def provision_openclaw(request: ProvisionRequest, background_tasks: Backgr
                 payment_signature=request.payment_signature,
                 user_email=request.user_email,
                 region=request.region,
+                expires_at=datetime.utcnow() + timedelta(days=7),  # 7 days hosting
             )
             db.add(deployment)
             db.commit()
@@ -606,6 +608,7 @@ async def list_deployments(wallet: Optional[str] = None):
                 "dashboard_url": d.dashboard_url,
                 "created_at": d.created_at.isoformat() if d.created_at else None,
                 "updated_at": d.updated_at.isoformat() if d.updated_at else None,
+                "expires_at": d.expires_at.isoformat() if d.expires_at else None,
                 "error_message": d.error_message
             })
 
@@ -648,11 +651,112 @@ async def delete_deployment(deployment_id: str):
         db.close()
 
 
+class RenewRequest(BaseModel):
+    deployment_id: str
+    payment_signature: str
+    wallet_address: str
+
+
+@app.post("/renew")
+async def renew_deployment(request: RenewRequest):
+    """
+    Renew a deployment for another 7 days (requires payment verification)
+    """
+    db = SessionLocal()
+    try:
+        deployment = db.query(DeploymentModel).filter(
+            DeploymentModel.deployment_id == request.deployment_id
+        ).first()
+
+        if not deployment:
+            raise HTTPException(status_code=404, detail="Deployment not found")
+
+        # Verify wallet matches
+        if deployment.wallet_address != request.wallet_address:
+            raise HTTPException(status_code=403, detail="Wallet address does not match deployment owner")
+
+        # Extend expiry by 7 days from now (or from current expiry if still valid)
+        current_expiry = deployment.expires_at or datetime.utcnow()
+        if current_expiry < datetime.utcnow():
+            # Already expired, extend from now
+            new_expiry = datetime.utcnow() + timedelta(days=7)
+        else:
+            # Still valid, extend from current expiry
+            new_expiry = current_expiry + timedelta(days=7)
+
+        deployment.expires_at = new_expiry
+        deployment.payment_signature = request.payment_signature  # Store latest payment
+        deployment.updated_at = datetime.utcnow()
+
+        # If status was 'expired', set it back to 'ready'
+        if deployment.status == 'expired':
+            deployment.status = 'ready'
+
+        db.commit()
+
+        logger.info(f"Deployment {request.deployment_id} renewed until {new_expiry}")
+
+        return {
+            "message": "Deployment renewed successfully",
+            "deployment_id": request.deployment_id,
+            "expires_at": new_expiry.isoformat()
+        }
+    finally:
+        db.close()
+
+
+async def check_expired_deployments():
+    """Background task to check and destroy expired deployments"""
+    while True:
+        try:
+            db = SessionLocal()
+            try:
+                # Find all expired deployments that haven't been destroyed yet
+                expired = db.query(DeploymentModel).filter(
+                    DeploymentModel.expires_at < datetime.utcnow(),
+                    DeploymentModel.status.in_(['ready', 'expired'])
+                ).all()
+
+                for deployment in expired:
+                    logger.info(f"Deployment {deployment.deployment_id} has expired, destroying droplet...")
+
+                    # Destroy the droplet
+                    if deployment.droplet_id:
+                        try:
+                            manager = digitalocean.Manager(token=DIGITALOCEAN_TOKEN)
+                            droplet = manager.get_droplet(deployment.droplet_id)
+                            droplet.destroy()
+                            logger.info(f"Destroyed expired droplet {deployment.droplet_id}")
+                        except Exception as e:
+                            logger.error(f"Error destroying expired droplet: {str(e)}")
+
+                    # Update status to destroyed
+                    deployment.status = 'destroyed'
+                    deployment.updated_at = datetime.utcnow()
+                    db.commit()
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"Error in expiry checker: {str(e)}")
+
+        # Check every hour
+        await asyncio.sleep(3600)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on app startup"""
+    asyncio.create_task(check_expired_deployments())
+    logger.info("Started expired deployment checker background task")
+
+
 @app.get("/")
 async def root():
     """Health check endpoint"""
     return {
-        "service": "OpenClaw Provisioning Platform",
+        "service": "Auto Clawd - OpenClaw Provisioning Platform",
         "status": "running",
         "version": "1.0.0"
     }
