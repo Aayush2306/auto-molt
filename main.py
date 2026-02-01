@@ -311,6 +311,17 @@ def configure_api_key_via_ssh(ip_address: str, anthropic_key: str) -> bool:
             ssh.exec_command(f"echo '{key}={value}' >> /opt/clawdbot.env")
 
         logger.info("All features enabled for dashboard")
+
+        # Enable full host access for TUI/Dashboard so bot can configure channels itself
+        logger.info("Enabling full host access for Clawdbot...")
+        ssh.exec_command("/opt/clawdbot-cli.sh config set tools.exec.host gateway")
+        time.sleep(1)
+        ssh.exec_command("/opt/clawdbot-cli.sh config set tools.exec.security full")
+        time.sleep(1)
+
+        # Disable sandbox mode
+        ssh.exec_command("/opt/clawdbot-cli.sh config set agents.defaults.sandbox.mode off")
+        time.sleep(1)
         stderr_output = stderr.read().decode().strip()
         if stderr_output:
             logger.error(f"Error adding API key: {stderr_output}")

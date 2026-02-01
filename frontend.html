@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Provisioning Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .status-section.visible {
+            display: block;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        
+        .status-pending { background: #ffeaa7; color: #d63031; }
+        .status-creating_droplet { background: #74b9ff; color: #0984e3; }
+        .status-waiting_for_droplet { background: #74b9ff; color: #0984e3; }
+        .status-configuring_openclaw { background: #a29bfe; color: #6c5ce7; }
+        .status-ready { background: #55efc4; color: #00b894; }
+        .status-failed { background: #ff7675; color: #d63031; }
+        
+        .dashboard-link {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #00b894;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .dashboard-link:hover {
+            background: #00a882;
+        }
+        
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ff7675;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦞 OpenClaw Platform</h1>
+            <p>Deploy your personal AI assistant in seconds</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h3>Quick Setup</h3>
+                <p>Enter your Anthropic API key and we'll provision a dedicated OpenClaw VPS for you. You'll receive a dashboard URL to manage your AI assistant.</p>
+            </div>
+            
+            <form id="provisionForm">
+                <div class="form-group">
+                    <label for="anthropicKey">Anthropic API Key *</label>
+                    <input 
+                        type="password" 
+                        id="anthropicKey" 
+                        name="anthropicKey" 
+                        placeholder="sk-ant-..." 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email (optional)</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="your@email.com"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="region">Region</label>
+                    <select id="region" name="region">
+                        <option value="nyc3">New York (NYC3)</option>
+                        <option value="nyc1">New York (NYC1)</option>
+                        <option value="sfo3">San Francisco (SFO3)</option>
+                        <option value="ams3">Amsterdam (AMS3)</option>
+                        <option value="sgp1">Singapore (SGP1)</option>
+                        <option value="lon1">London (LON1)</option>
+                        <option value="fra1">Frankfurt (FRA1)</option>
+                        <option value="tor1">Toronto (TOR1)</option>
+                        <option value="blr1">Bangalore (BLR1)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    Deploy OpenClaw VPS
+                </button>
+            </form>
+            
+            <div id="statusSection" class="status-section">
+                <h3>Deployment Status</h3>
+                <p><strong>Deployment ID:</strong> <span id="deploymentId">-</span></p>
+                <p>
+                    <strong>Status:</strong> 
+                    <span id="statusBadge" class="status-badge">-</span>
+                    <span id="loadingSpinner" class="loading" style="display: none;"></span>
+                </p>
+                <p><strong>IP Address:</strong> <span id="ipAddress">-</span></p>
+                <div id="dashboardSection" style="display: none;">
+                    <a id="dashboardLink" href="#" target="_blank" class="dashboard-link">
+                        🚀 Open OpenClaw Dashboard
+                    </a>
+                </div>
+                <div id="errorSection" style="display: none;">
+                    <div class="error-message" id="errorMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let pollInterval = null;
+        let currentDeploymentId = null;
+
+        document.getElementById('provisionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const statusSection = document.getElementById('statusSection');
+            const dashboardSection = document.getElementById('dashboardSection');
+            const errorSection = document.getElementById('errorSection');
+            
+            // Get form data
+            const anthropicKey = document.getElementById('anthropicKey').value;
+            const email = document.getElementById('email').value;
+            const region = document.getElementById('region').value;
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Provisioning...';
+            
+            // Hide previous results
+            dashboardSection.style.display = 'none';
+            errorSection.style.display = 'none';
+            
+            try {
+                // Submit provision request
+                const response = await fetch(`${API_BASE}/provision`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        anthropic_api_key: anthropicKey,
+                        user_email: email || null,
+                        region: region
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                currentDeploymentId = data.deployment_id;
+                
+                // Show status section
+                statusSection.classList.add('visible');
+                document.getElementById('deploymentId').textContent = currentDeploymentId;
+                document.getElementById('loadingSpinner').style.display = 'inline-block';
+                
+                // Start polling for status
+                startPolling(currentDeploymentId);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to start provisioning: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Deploy OpenClaw VPS';
+            }
+        });
+
+        async function startPolling(deploymentId) {
+            // Clear existing interval
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            
+            // Poll immediately
+            await checkStatus(deploymentId);
+            
+            // Then poll every 5 seconds
+            pollInterval = setInterval(async () => {
+                await checkStatus(deploymentId);
+            }, 5000);
+        }
+
+        async function checkStatus(deploymentId) {
+            try {
+                const response = await fetch(`${API_BASE}/status/${deploymentId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update UI
+                updateStatusUI(data);
+                
+                // Stop polling if completed or failed
+                if (data.status === 'ready' || data.status === 'failed') {
+                    clearInterval(pollInterval);
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('submitBtn').textContent = 'Deploy Another OpenClaw VPS';
+                }
+                
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        function updateStatusUI(data) {
+            const statusBadge = document.getElementById('statusBadge');
+            const ipAddress = document.getElementById('ipAddress');
+            const dashboardSection = document.getElementById('dashboardSection');
+            const dashboardLink = document.getElementById('dashboardLink');
+            const errorSection = document.getElementById('errorSection');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Update status badge
+            statusBadge.textContent = data.status.replace(/_/g, ' ').toUpperCase();
+            statusBadge.className = 'status-badge status-' + data.status;
+            
+            // Update IP address
+            ipAddress.textContent = data.ip_address || '-';
+            
+            // Show dashboard link if ready
+            if (data.status === 'ready' && data.dashboard_url) {
+                dashboardSection.style.display = 'block';
+                dashboardLink.href = data.dashboard_url;
+            }
+            
+            // Show error if failed
+            if (data.status === 'failed' && data.error_message) {
+                errorSection.style.display = 'block';
+                errorMessage.textContent = data.error_message;
+            }
+        }
+    </script>
+</body>
+</html>
