@@ -9,6 +9,7 @@ import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet, Zap } from 'luc
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || '0x0000000000000000000000000000000000000000'
 const HOSTING_PRICE_ETH = '0.005'
+const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
 function Create() {
   const navigate = useNavigate()
@@ -84,6 +85,13 @@ function Create() {
   const handlePayment = async () => {
     if (!address) return
     setError('')
+
+    // Test mode - skip actual payment
+    if (TEST_MODE) {
+      setPaymentHash('test_' + Date.now())
+      setStep(3)
+      return
+    }
 
     try {
       sendTransaction({
@@ -237,11 +245,16 @@ function Create() {
                   </>
                 ) : (
                   <>
-                    Pay 0.005 ETH
+                    {TEST_MODE ? 'Continue (Test Mode)' : 'Pay 0.005 ETH'}
                     <ArrowRight size={20} />
                   </>
                 )}
               </button>
+              {TEST_MODE && (
+                <p style={{ marginTop: '12px', fontSize: '12px', color: '#f59e0b' }}>
+                  Test mode enabled - no payment required
+                </p>
+              )}
             </motion.div>
           )}
 
