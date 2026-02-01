@@ -1,39 +1,45 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
+import { parseEther } from 'viem'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
-import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet } from 'lucide-react'
+import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet, Zap } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || 'YOUR_SOLANA_WALLET_ADDRESS_HERE'
-const HOSTING_PRICE_SOL = 0.1
+const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || '0x0000000000000000000000000000000000000000'
+const HOSTING_PRICE_ETH = '0.005'
 
 function Create() {
   const navigate = useNavigate()
-  const { publicKey, sendTransaction, connected } = useWallet()
-  const { connection } = useConnection()
+  const { address, isConnected } = useAccount()
+  const { data: hash, sendTransaction, isPending: isSending } = useSendTransaction()
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
 
-  const [step, setStep] = useState(1) // 1: Connect, 2: Pay, 3: API Key, 4: Deploying, 5: Done
+  const [step, setStep] = useState(1)
   const [apiKey, setApiKey] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
   const [deploymentId, setDeploymentId] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [progress, setProgress] = useState(0)
-  const [paymentSignature, setPaymentSignature] = useState('')
+  const [paymentHash, setPaymentHash] = useState('')
 
-  // Update step based on wallet connection
   useEffect(() => {
-    if (connected && step === 1) {
+    if (isConnected && step === 1) {
       setStep(2)
-    } else if (!connected && step > 1) {
+    } else if (!isConnected && step > 1) {
       setStep(1)
     }
-  }, [connected, step])
+  }, [isConnected, step])
 
-  // Poll deployment status
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      setPaymentHash(hash)
+      setStep(3)
+    }
+  }, [isConfirmed, hash])
+
   useEffect(() => {
     if (!deploymentId || step !== 4) return
 
@@ -43,7 +49,6 @@ function Create() {
         const data = await response.json()
         setDeploymentStatus(data)
 
-        // Update progress based on status
         switch (data.status) {
           case 'pending':
             setProgress(10)
@@ -77,37 +82,16 @@ function Create() {
   }, [deploymentId, step])
 
   const handlePayment = async () => {
-    if (!publicKey) return
-
-    setIsProcessing(true)
+    if (!address) return
     setError('')
 
     try {
-      // For devnet testing, we'll simulate the payment
-      // In production, uncomment the actual transaction code
-
-      /*
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(PAYMENT_WALLET),
-          lamports: HOSTING_PRICE_SOL * LAMPORTS_PER_SOL,
-        })
-      )
-
-      const signature = await sendTransaction(transaction, connection)
-      await connection.confirmTransaction(signature, 'confirmed')
-      setPaymentSignature(signature)
-      */
-
-      // Simulated payment for devnet
-      setPaymentSignature('simulated_' + Date.now())
-
-      setStep(3)
+      sendTransaction({
+        to: PAYMENT_WALLET,
+        value: parseEther(HOSTING_PRICE_ETH)
+      })
     } catch (err) {
       setError('Payment failed: ' + err.message)
-    } finally {
-      setIsProcessing(false)
     }
   }
 
@@ -126,8 +110,8 @@ function Create() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           anthropic_api_key: apiKey,
-          wallet_address: publicKey?.toBase58(),
-          payment_signature: paymentSignature,
+          wallet_address: address,
+          payment_signature: paymentHash,
           region: 'nyc3'
         })
       })
@@ -172,38 +156,30 @@ function Create() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1>Deploy in Minutes</h1>
-        <p className="subtitle">No servers, no code, no hassle - just your AI assistant</p>
+        <div className="create-header">
+          <Zap className="create-icon" size={40} />
+          <h1>Deploy Your AI</h1>
+          <p className="subtitle">Get your OpenClaw instance running in minutes</p>
+        </div>
 
         {/* Progress Steps */}
         <div className="progress-steps">
-          <div className={`progress-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-            <div className="step-icon">
-              {step > 1 ? <CheckCircle size={20} /> : '1'}
+          {[
+            { num: 1, label: 'Connect' },
+            { num: 2, label: 'Pay' },
+            { num: 3, label: 'API Key' },
+            { num: 4, label: 'Deploy' }
+          ].map((s, i) => (
+            <div key={s.num} className="step-wrapper">
+              <div className={`progress-step ${step >= s.num ? 'active' : ''} ${step > s.num ? 'completed' : ''}`}>
+                <div className="step-icon">
+                  {step > s.num ? <CheckCircle size={18} /> : s.num}
+                </div>
+                <span>{s.label}</span>
+              </div>
+              {i < 3 && <div className={`progress-line ${step > s.num ? 'completed' : ''}`} />}
             </div>
-            <span>Connect</span>
-          </div>
-          <div className="progress-line" />
-          <div className={`progress-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-            <div className="step-icon">
-              {step > 2 ? <CheckCircle size={20} /> : '2'}
-            </div>
-            <span>Pay</span>
-          </div>
-          <div className="progress-line" />
-          <div className={`progress-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}>
-            <div className="step-icon">
-              {step > 3 ? <CheckCircle size={20} /> : '3'}
-            </div>
-            <span>API Key</span>
-          </div>
-          <div className="progress-line" />
-          <div className={`progress-step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`}>
-            <div className="step-icon">
-              {step > 4 ? <CheckCircle size={20} /> : '4'}
-            </div>
-            <span>Deploy</span>
-          </div>
+          ))}
         </div>
 
         {/* Step Content */}
@@ -215,53 +191,57 @@ function Create() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <Wallet size={48} className="step-icon-large" />
+              <div className="step-card-icon">
+                <Wallet size={32} />
+              </div>
               <h2>Connect Your Wallet</h2>
-              <p>Connect your Phantom wallet to continue</p>
-              <WalletMultiButton />
+              <p>Connect your wallet to continue with Base network</p>
+              <div className="connect-wrapper">
+                <ConnectButton />
+              </div>
             </motion.div>
           )}
 
           {/* Step 2: Payment */}
           {step === 2 && (
             <motion.div
-              className="step-card"
+              className="step-card payment-card"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <div className="payment-info">
-                <h2>Weekly Hosting</h2>
-                <div className="price">
-                  <span className="amount">0.1</span>
-                  <span className="currency">SOL</span>
+              <div className="payment-header">
+                <span className="payment-label">Weekly Hosting</span>
+                <div className="price-display">
+                  <span className="price-amount">0.005</span>
+                  <span className="price-currency">ETH</span>
                 </div>
-                <p className="price-note">7 days of dedicated hosting</p>
-
-                <ul className="payment-features">
-                  <li><CheckCircle size={16} /> Your own dedicated server</li>
-                  <li><CheckCircle size={16} /> Zero setup required</li>
-                  <li><CheckCircle size={16} /> We handle all the tech</li>
-                  <li><CheckCircle size={16} /> Cancel anytime</li>
-                </ul>
-
-                <button
-                  className="btn btn-primary btn-large"
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="spin" size={20} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Pay 0.1 SOL
-                      <ArrowRight size={20} />
-                    </>
-                  )}
-                </button>
+                <span className="price-network">on Base</span>
               </div>
+
+              <ul className="payment-features">
+                <li><CheckCircle size={16} /> Dedicated cloud server</li>
+                <li><CheckCircle size={16} /> Full OpenClaw dashboard</li>
+                <li><CheckCircle size={16} /> 50+ integrations ready</li>
+                <li><CheckCircle size={16} /> 7 days of hosting</li>
+              </ul>
+
+              <button
+                className="btn btn-primary btn-large btn-full"
+                onClick={handlePayment}
+                disabled={isSending || isConfirming}
+              >
+                {isSending || isConfirming ? (
+                  <>
+                    <Loader2 className="spin" size={20} />
+                    {isConfirming ? 'Confirming...' : 'Processing...'}
+                  </>
+                ) : (
+                  <>
+                    Pay 0.005 ETH
+                    <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
             </motion.div>
           )}
 
@@ -272,9 +252,11 @@ function Create() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <Key size={48} className="step-icon-large" />
+              <div className="step-card-icon">
+                <Key size={32} />
+              </div>
               <h2>Enter Your API Key</h2>
-              <p>Paste your Anthropic API key below</p>
+              <p>Your Anthropic API key powers the AI</p>
 
               <div className="input-group">
                 <input
@@ -294,7 +276,7 @@ function Create() {
               </p>
 
               <button
-                className="btn btn-primary btn-large"
+                className="btn btn-primary btn-large btn-full"
                 onClick={handleDeploy}
                 disabled={isProcessing || !apiKey}
               >
@@ -316,11 +298,13 @@ function Create() {
           {/* Step 4: Deploying */}
           {step === 4 && (
             <motion.div
-              className="step-card deploying"
+              className="step-card deploying-card"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <Loader2 size={48} className="spin step-icon-large" />
+              <div className="deploying-animation">
+                <Loader2 size={48} className="spin" />
+              </div>
               <h2>Setting Up Your Server</h2>
               <p className="status-text">{getStatusText()}</p>
 
@@ -330,14 +314,15 @@ function Create() {
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <span className="progress-percent">{progress}%</span>
-
-              <p className="estimate-time">Estimated time: 3-5 minutes</p>
+              <div className="progress-info">
+                <span className="progress-percent">{progress}%</span>
+                <span className="estimate-time">~3-5 minutes</span>
+              </div>
 
               {deploymentStatus?.ip_address && (
-                <p className="ip-info">
-                  Server IP: <code>{deploymentStatus.ip_address}</code>
-                </p>
+                <div className="ip-badge">
+                  Server: <code>{deploymentStatus.ip_address}</code>
+                </div>
               )}
             </motion.div>
           )}
@@ -345,32 +330,36 @@ function Create() {
           {/* Step 5: Complete */}
           {step === 5 && (
             <motion.div
-              className="step-card success"
-              initial={{ opacity: 0, scale: 0.9 }}
+              className="step-card success-card"
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <CheckCircle size={64} className="success-icon" />
+              <div className="success-animation">
+                <CheckCircle size={64} />
+              </div>
               <h2>You're All Set!</h2>
-              <p>Your AI assistant is now live and ready to use</p>
+              <p>Your AI assistant is live and ready</p>
 
-              {deploymentStatus?.dashboard_url && (
-                <a
-                  href={deploymentStatus.dashboard_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-primary btn-large"
+              <div className="success-actions">
+                {deploymentStatus?.dashboard_url && (
+                  <a
+                    href={deploymentStatus.dashboard_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-primary btn-large"
+                  >
+                    Open Dashboard
+                    <ArrowRight size={20} />
+                  </a>
+                )}
+
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => navigate('/dashboard')}
                 >
-                  Open Dashboard
-                  <ArrowRight size={20} />
-                </a>
-              )}
-
-              <button
-                className="btn btn-secondary"
-                onClick={() => navigate('/dashboard')}
-              >
-                View My Hosting
-              </button>
+                  View My Deployments
+                </button>
+              </div>
             </motion.div>
           )}
 

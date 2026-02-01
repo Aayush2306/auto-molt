@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useAccount } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
 import {
   Server,
@@ -13,30 +13,31 @@ import {
   Calendar,
   Cpu,
   Globe,
-  Trash2
+  Trash2,
+  Wallet
 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function Dashboard() {
-  const { publicKey, connected } = useWallet()
+  const { address, isConnected } = useAccount()
   const [deployments, setDeployments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (connected && publicKey) {
+    if (isConnected && address) {
       fetchDeployments()
     } else {
       setLoading(false)
     }
-  }, [connected, publicKey])
+  }, [isConnected, address])
 
   const fetchDeployments = async () => {
     try {
       setLoading(true)
       const response = await fetch(
-        `${API_URL}/deployments?wallet=${publicKey?.toBase58()}`
+        `${API_URL}/deployments?wallet=${address}`
       )
       const data = await response.json()
       setDeployments(data.deployments || [])
@@ -48,9 +49,9 @@ function Dashboard() {
     }
   }
 
-  const calculateDaysRemaining = (createdAt) => {
-    const created = new Date(createdAt)
-    const expiry = new Date(created.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+  const calculateDaysRemaining = (expiresAt) => {
+    if (!expiresAt) return 0
+    const expiry = new Date(expiresAt)
     const now = new Date()
     const diff = expiry - now
     const days = Math.ceil(diff / (24 * 60 * 60 * 1000))
@@ -69,7 +70,7 @@ function Dashboard() {
   }
 
   const handleDelete = async (deploymentId) => {
-    if (!confirm('Are you sure you want to delete this deployment? This will destroy your server.')) {
+    if (!confirm('Are you sure you want to delete this deployment?')) {
       return
     }
 
@@ -83,7 +84,7 @@ function Dashboard() {
     }
   }
 
-  if (!connected) {
+  if (!isConnected) {
     return (
       <div className="dashboard-page">
         <div className="dashboard-container">
@@ -92,10 +93,12 @@ function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Server size={64} className="prompt-icon" />
+            <div className="prompt-icon-wrapper">
+              <Wallet size={48} />
+            </div>
             <h2>Connect Your Wallet</h2>
-            <p>Connect your wallet to view your hosted instances</p>
-            <WalletMultiButton />
+            <p>Connect your wallet to view your deployments</p>
+            <ConnectButton />
           </motion.div>
         </div>
       </div>
@@ -112,7 +115,7 @@ function Dashboard() {
         >
           <div className="header-left">
             <h1>My Deployments</h1>
-            <p>Manage your Auto Clawd hosted instances</p>
+            <p>Manage your AI instances</p>
           </div>
           <div className="header-actions">
             <button className="btn btn-secondary" onClick={fetchDeployments}>
@@ -121,7 +124,7 @@ function Dashboard() {
             </button>
             <Link to="/create" className="btn btn-primary">
               <Plus size={18} />
-              New Deployment
+              New
             </Link>
           </div>
         </motion.div>
@@ -145,9 +148,11 @@ function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <Server size={64} className="empty-icon" />
+            <div className="empty-icon-wrapper">
+              <Server size={48} />
+            </div>
             <h3>No Deployments Yet</h3>
-            <p>Get your AI assistant up and running in minutes</p>
+            <p>Deploy your first AI assistant in minutes</p>
             <Link to="/create" className="btn btn-primary">
               <Plus size={18} />
               Create Deployment
@@ -156,7 +161,7 @@ function Dashboard() {
         ) : (
           <div className="deployments-grid">
             {deployments.map((deployment, index) => {
-              const daysRemaining = calculateDaysRemaining(deployment.created_at)
+              const daysRemaining = calculateDaysRemaining(deployment.expires_at)
               const isExpired = daysRemaining === 0
               const isExpiringSoon = daysRemaining <= 2 && !isExpired
 
@@ -170,8 +175,8 @@ function Dashboard() {
                 >
                   <div className="card-header">
                     <div className="card-title">
-                      <Cpu size={20} />
-                      <span>clawd-{deployment.deployment_id.slice(0, 6)}</span>
+                      <Cpu size={18} />
+                      <span>claw-{deployment.deployment_id.slice(0, 6)}</span>
                     </div>
                     <span className={`status-badge ${getStatusColor(deployment.status)}`}>
                       {deployment.status}
@@ -201,11 +206,10 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Progress bar for time remaining */}
                     <div className="time-progress">
                       <div
                         className="time-progress-bar"
-                        style={{ width: `${(daysRemaining / 7) * 100}%` }}
+                        style={{ width: `${Math.min(100, (daysRemaining / 7) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -218,20 +222,21 @@ function Dashboard() {
                         rel="noreferrer"
                         className="btn btn-primary"
                       >
-                        Open Dashboard
+                        Dashboard
                         <ExternalLink size={16} />
                       </a>
                     )}
 
                     {isExpired && (
                       <Link to="/create" className="btn btn-primary">
-                        Renew Hosting
+                        Renew
                       </Link>
                     )}
 
                     <button
                       className="btn btn-danger"
                       onClick={() => handleDelete(deployment.deployment_id)}
+                      title="Delete deployment"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -242,9 +247,8 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Wallet Info */}
         <div className="wallet-info">
-          <span>Connected: {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}</span>
+          <span>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
         </div>
       </div>
     </div>

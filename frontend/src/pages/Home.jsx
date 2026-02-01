@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings } from 'lucide-react'
+import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings, ArrowRight } from 'lucide-react'
 
 function Home() {
   const features = [
@@ -22,7 +22,7 @@ function Home() {
     {
       icon: <CreditCard />,
       title: 'Pay with Crypto',
-      description: 'Simple weekly pricing at 0.1 SOL. No subscriptions, no hidden fees, cancel anytime'
+      description: 'Simple weekly pricing at 0.005 ETH on Base. No subscriptions, cancel anytime'
     },
     {
       icon: <Shield />,
@@ -58,25 +58,26 @@ function Home() {
           </h1>
 
           <p className="hero-description">
-            Auto Clawd is the easiest way to host your own OpenClaw AI assistant.
+            AutoClaw is the easiest way to host your own OpenClaw AI assistant.
             No servers to manage, no code to write, no technical knowledge required.
             Just connect, pay, and deploy - we handle everything else.
           </p>
 
           <div className="hero-buttons">
-            <Link to="/create" className="btn btn-primary">
+            <Link to="/create" className="btn btn-primary btn-large">
               <Zap size={20} />
               Start Deploying
+              <ArrowRight size={20} />
             </Link>
             <a href="#features" className="btn btn-secondary">
-              How It Works
+              Learn More
             </a>
           </div>
 
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-value">0.1</span>
-              <span className="stat-label">SOL / Week</span>
+              <span className="stat-value">0.005</span>
+              <span className="stat-label">ETH / Week</span>
             </div>
             <div className="stat-divider" />
             <div className="stat">
@@ -85,8 +86,8 @@ function Home() {
             </div>
             <div className="stat-divider" />
             <div className="stat">
-              <span className="stat-value">0</span>
-              <span className="stat-label">Code Required</span>
+              <span className="stat-value">Base</span>
+              <span className="stat-label">Network</span>
             </div>
           </div>
         </motion.div>
@@ -104,14 +105,14 @@ function Home() {
                 <span></span>
                 <span></span>
               </div>
-              <span className="card-title">auto-clawd</span>
+              <span className="card-title">autoclaw</span>
             </div>
             <div className="card-body">
               <div className="terminal-line">
                 <span className="prompt">1.</span> Connect wallet
               </div>
               <div className="terminal-line success">
-                <span className="prompt">2.</span> Pay 0.1 SOL
+                <span className="prompt">2.</span> Pay 0.005 ETH
               </div>
               <div className="terminal-line success">
                 <span className="prompt">3.</span> Paste API key
@@ -135,7 +136,7 @@ function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2>Why Auto Clawd?</h2>
+          <h2>Why AutoClaw?</h2>
           <p>The simplest way to get your own AI assistant up and running</p>
         </motion.div>
 
@@ -178,7 +179,7 @@ function Home() {
           >
             <div className="step-number">1</div>
             <h3>Connect Wallet</h3>
-            <p>Link your Phantom wallet in one click</p>
+            <p>Link your wallet on Base network</p>
           </motion.div>
 
           <div className="step-arrow">→</div>
@@ -192,7 +193,7 @@ function Home() {
           >
             <div className="step-number">2</div>
             <h3>Pay & Paste</h3>
-            <p>0.1 SOL + your Anthropic API key</p>
+            <p>0.005 ETH + your Anthropic API key</p>
           </motion.div>
 
           <div className="step-arrow">→</div>
@@ -262,6 +263,7 @@ function Home() {
           <Link to="/create" className="btn btn-primary btn-large">
             <Zap size={24} />
             Deploy in 2 Minutes
+            <ArrowRight size={24} />
           </Link>
         </motion.div>
       </section>
@@ -270,10 +272,10 @@ function Home() {
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-brand">
-            <img src="/logo.png" alt="Auto Clawd" />
-            <span className="gradient-text">Auto Clawd</span>
+            <img src="/logo.png" alt="AutoClaw" />
+            <span className="gradient-text">AutoClaw</span>
           </div>
-          <p>No-code OpenClaw hosting made simple</p>
+          <p>No-code OpenClaw hosting on Base</p>
         </div>
       </footer>
     </div>

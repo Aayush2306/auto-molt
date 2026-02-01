@@ -1,11 +1,12 @@
-# Auto Clawd - Production Deployment Guide
+# AutoClaw - Production Deployment Guide
 
 ## Prerequisites
 - GitHub account
 - Railway account (https://railway.app)
 - Vercel account (https://vercel.com)
 - Your SSH private key (for DigitalOcean droplet access)
-- Your Solana wallet address (for receiving payments)
+- Your Ethereum wallet address on Base (for receiving payments)
+- WalletConnect Project ID (get from https://cloud.walletconnect.com)
 
 ---
 
@@ -17,9 +18,9 @@
 cd C:\Users\Aayus\OneDrive\Desktop\auto-clod
 git init
 git add .
-git commit -m "Initial commit - Auto Clawd"
+git commit -m "Initial commit - AutoClaw"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/auto-clawd.git
+git remote add origin https://github.com/YOUR_USERNAME/autoclaw.git
 git push -u origin main
 ```
 
@@ -29,7 +30,7 @@ git push -u origin main
 
 1. Go to https://railway.app and sign in with GitHub
 2. Click "New Project" → "Deploy from GitHub repo"
-3. Select your `auto-clawd` repository
+3. Select your `autoclaw` repository
 4. Railway will auto-detect Python and start building
 
 ### Configure Environment Variables in Railway:
@@ -66,7 +67,7 @@ Copy the output and paste it as `SSH_PRIVATE_KEY_BASE64` in Railway.
 ### Get Your Backend URL:
 
 1. Go to Settings → Domains
-2. Click "Generate Domain" to get a URL like `auto-clawd-production.up.railway.app`
+2. Click "Generate Domain" to get a URL like `autoclaw-production.up.railway.app`
 3. Save this URL for the frontend configuration
 
 ---
@@ -75,7 +76,7 @@ Copy the output and paste it as `SSH_PRIVATE_KEY_BASE64` in Railway.
 
 1. Go to https://vercel.com and sign in with GitHub
 2. Click "Add New" → "Project"
-3. Import your `auto-clawd` repository
+3. Import your `autoclaw` repository
 4. Configure the project:
    - **Framework Preset:** Vite
    - **Root Directory:** `frontend`
@@ -86,14 +87,15 @@ Copy the output and paste it as `SSH_PRIVATE_KEY_BASE64` in Railway.
 
 ```
 VITE_API_URL=https://your-backend.up.railway.app     # Your Railway backend URL
-VITE_PAYMENT_WALLET=YourSolanaWalletAddressHere      # Your Phantom wallet address
+VITE_PAYMENT_WALLET=0xYourEthereumWalletAddress      # Your ETH wallet on Base
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id       # From WalletConnect Cloud
 ```
 
 5. Click "Deploy"
 
 ### Get Your Frontend URL:
 
-After deployment, Vercel gives you a URL like `auto-clawd.vercel.app`
+After deployment, Vercel gives you a URL like `autoclaw.vercel.app`
 
 ---
 
@@ -101,7 +103,7 @@ After deployment, Vercel gives you a URL like `auto-clawd.vercel.app`
 
 Go back to Railway and update:
 ```
-FRONTEND_URL=https://auto-clawd.vercel.app           # Your actual Vercel URL
+FRONTEND_URL=https://autoclaw.vercel.app           # Your actual Vercel URL
 ```
 
 ---
@@ -124,27 +126,11 @@ Then update environment variables:
 
 ---
 
-## Step 6: Enable Real Payments
+## Step 6: Payment Configuration
 
-In `frontend/src/pages/Create.jsx`, uncomment the real payment code (lines 89-101) and remove the simulated payment:
+The frontend is configured to accept 0.005 ETH on Base network. Payments are automatically processed using RainbowKit/wagmi.
 
-```javascript
-// Uncomment this:
-const transaction = new Transaction().add(
-  SystemProgram.transfer({
-    fromPubkey: publicKey,
-    toPubkey: new PublicKey(PAYMENT_WALLET),
-    lamports: HOSTING_PRICE_SOL * LAMPORTS_PER_SOL,
-  })
-)
-
-const signature = await sendTransaction(transaction, connection)
-await connection.confirmTransaction(signature, 'confirmed')
-setPaymentSignature(signature)
-
-// Remove or comment out:
-// setPaymentSignature('simulated_' + Date.now())
-```
+Make sure your `VITE_PAYMENT_WALLET` is set to a valid Ethereum address on the Base network where you want to receive payments.
 
 ---
 
@@ -175,8 +161,9 @@ setPaymentSignature(signature)
 - Check `DATABASE_URL` is set in Railway variables
 
 ### Payments not working
-- Verify `VITE_PAYMENT_WALLET` is a valid Solana address
-- For testing, use Solana devnet first
+- Verify `VITE_PAYMENT_WALLET` is a valid Ethereum address
+- Ensure users have ETH on Base network
+- Check `VITE_WALLETCONNECT_PROJECT_ID` is set correctly
 
 ---
 

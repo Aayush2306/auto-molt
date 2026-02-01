@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount } from 'wagmi'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 
 function Navbar() {
-  const { connected } = useWallet()
+  const { isConnected } = useAccount()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -14,20 +14,24 @@ function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="logo">
-        <img src="/logo.png" alt="Auto Clawd" className="logo-img" />
-        <span>Auto Clawd</span>
+        <img src="/logo.png" alt="AutoClaw" className="logo-img" />
+        <span>AutoClaw</span>
       </Link>
 
       {/* Desktop Nav */}
       <div className="nav-links desktop-nav">
         <Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link>
-        {connected && (
+        {isConnected && (
           <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}>
-            My Hosting
+            Dashboard
           </Link>
         )}
-        <Link to="/create" className="nav-cta">Launch App</Link>
-        <WalletMultiButton />
+        <Link to="/create" className="nav-cta">Launch</Link>
+        <ConnectButton
+          showBalance={false}
+          chainStatus="icon"
+          accountStatus="avatar"
+        />
       </div>
 
       {/* Mobile Menu Button */}
@@ -42,13 +46,17 @@ function Navbar() {
       {mobileMenuOpen && (
         <div className="mobile-nav">
           <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-          {connected && (
+          {isConnected && (
             <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-              My Hosting
+              Dashboard
             </Link>
           )}
-          <Link to="/create" onClick={() => setMobileMenuOpen(false)}>Launch App</Link>
-          <WalletMultiButton />
+          <Link to="/create" onClick={() => setMobileMenuOpen(false)}>Launch</Link>
+          <ConnectButton
+            showBalance={false}
+            chainStatus="icon"
+            accountStatus="avatar"
+          />
         </div>
       )}
     </nav>

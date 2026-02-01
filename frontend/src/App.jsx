@@ -1,27 +1,41 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets'
-import { clusterApiUrl } from '@solana/web3.js'
-import { useMemo } from 'react'
+import { WagmiProvider, createConfig, http } from 'wagmi'
+import { base } from 'wagmi/chains'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RainbowKitProvider, getDefaultConfig, darkTheme } from '@rainbow-me/rainbowkit'
 
 import Home from './pages/Home'
 import Create from './pages/Create'
 import Dashboard from './pages/Dashboard'
 import Navbar from './components/Navbar'
 
-import '@solana/wallet-adapter-react-ui/styles.css'
+import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
-function App() {
-  const network = 'devnet' // Change to 'mainnet-beta' for production
-  const endpoint = useMemo(() => clusterApiUrl(network), [network])
-  const wallets = useMemo(() => [new PhantomWalletAdapter()], [])
+const config = getDefaultConfig({
+  appName: 'AutoClaw',
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo',
+  chains: [base],
+  transports: {
+    [base.id]: http()
+  }
+})
 
+const queryClient = new QueryClient()
+
+function App() {
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={darkTheme({
+            accentColor: '#ff4d4d',
+            accentColorForeground: 'white',
+            borderRadius: 'large',
+            fontStack: 'system',
+            overlayBlur: 'small'
+          })}
+        >
           <Router>
             <div className="app">
               <Navbar />
@@ -32,9 +46,9 @@ function App() {
               </Routes>
             </div>
           </Router>
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   )
 }
 
