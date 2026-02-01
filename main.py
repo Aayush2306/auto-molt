@@ -56,7 +56,11 @@ class DeploymentModel(Base):
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Auto Clawd - OpenClaw Provisioning Platform")
+app = FastAPI(title="AutoClaw - OpenClaw Provisioning Platform")
+
+logger.info(f"Starting AutoClaw API...")
+logger.info(f"Database URL: {DATABASE_URL[:30]}...")
+logger.info(f"Frontend URL: {FRONTEND_URL}")
 
 # CORS middleware for frontend
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -755,8 +759,9 @@ async def startup_event():
 @app.get("/")
 async def root():
     """Health check endpoint"""
+    logger.info("Health check endpoint called")
     return {
-        "service": "Auto Clawd - OpenClaw Provisioning Platform",
+        "service": "AutoClaw - OpenClaw Provisioning Platform",
         "status": "running",
         "version": "1.0.0"
     }
