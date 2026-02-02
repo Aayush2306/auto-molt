@@ -72,18 +72,19 @@ Base.metadata.create_all(bind=engine)
 # Run migrations for existing tables (add new columns)
 def run_migrations():
     """Add new columns to existing tables if they don't exist"""
-    from sqlalchemy import text, inspect
+    from sqlalchemy import text
 
-    inspector = inspect(engine)
-
-    # Check if deployments table exists and add is_free_deploy column if missing
-    if 'deployments' in inspector.get_table_names():
-        columns = [col['name'] for col in inspector.get_columns('deployments')]
-        if 'is_free_deploy' not in columns:
-            with engine.connect() as conn:
-                conn.execute(text("ALTER TABLE deployments ADD COLUMN is_free_deploy INTEGER DEFAULT 0"))
-                conn.commit()
-                logger.info("Migration: Added is_free_deploy column to deployments table")
+    with engine.connect() as conn:
+        # PostgreSQL: Add is_free_deploy column if it doesn't exist
+        try:
+            conn.execute(text("""
+                ALTER TABLE deployments
+                ADD COLUMN IF NOT EXISTS is_free_deploy INTEGER DEFAULT 0
+            """))
+            conn.commit()
+            logger.info("Migration: Ensured is_free_deploy column exists in deployments table")
+        except Exception as e:
+            logger.warning(f"Migration note: {e}")
 
 run_migrations()
 
