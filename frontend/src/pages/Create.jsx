@@ -4,7 +4,7 @@ import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wa
 import { parseEther } from 'viem'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
-import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet, Zap } from 'lucide-react'
+import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet, Zap, Gift } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || '0x0000000000000000000000000000000000000000'
@@ -25,6 +25,22 @@ function Create() {
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [progress, setProgress] = useState(0)
   const [paymentHash, setPaymentHash] = useState('')
+  const [freeDeployInfo, setFreeDeployInfo] = useState(null)
+  const [useFreeDeploy, setUseFreeDeploy] = useState(false)
+
+  // Fetch free deploy info on mount
+  useEffect(() => {
+    const fetchFreeDeployInfo = async () => {
+      try {
+        const response = await fetch(`${API_URL}/free-deploys`)
+        const data = await response.json()
+        setFreeDeployInfo(data)
+      } catch (err) {
+        console.error('Error fetching free deploy info:', err)
+      }
+    }
+    fetchFreeDeployInfo()
+  }, [])
 
   useEffect(() => {
     if (isConnected && step === 1) {
@@ -103,6 +119,12 @@ function Create() {
     }
   }
 
+  const handleFreeDeploy = () => {
+    setUseFreeDeploy(true)
+    setPaymentHash('free_deploy_' + Date.now())
+    setStep(3)
+  }
+
   const handleDeploy = async () => {
     if (!apiKey.startsWith('sk-ant-')) {
       setError('Please enter a valid Anthropic API key (starts with sk-ant-)')
@@ -120,7 +142,8 @@ function Create() {
           anthropic_api_key: apiKey,
           wallet_address: address,
           payment_signature: paymentHash,
-          region: 'nyc3'
+          region: 'nyc3',
+          use_free_deploy: useFreeDeploy
         })
       })
 
@@ -217,6 +240,25 @@ function Create() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
+              {/* Free Deploy Banner */}
+              {freeDeployInfo?.is_active && freeDeployInfo?.remaining > 0 && (
+                <div className="free-deploy-banner">
+                  <Gift size={20} />
+                  <div className="free-deploy-info">
+                    <span className="free-deploy-title">Free Trial Available!</span>
+                    <span className="free-deploy-count">
+                      {freeDeployInfo.claimed}/{freeDeployInfo.total} claimed
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-success btn-small"
+                    onClick={handleFreeDeploy}
+                  >
+                    Claim Free Week
+                  </button>
+                </div>
+              )}
+
               <div className="payment-header">
                 <span className="payment-label">Weekly Hosting</span>
                 <div className="price-display">

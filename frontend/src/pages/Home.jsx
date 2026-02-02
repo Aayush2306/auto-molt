@@ -1,8 +1,25 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings, ArrowRight } from 'lucide-react'
+import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings, ArrowRight, Gift } from 'lucide-react'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function Home() {
+  const [freeDeployInfo, setFreeDeployInfo] = useState(null)
+
+  useEffect(() => {
+    const fetchFreeDeployInfo = async () => {
+      try {
+        const response = await fetch(`${API_URL}/free-deploys`)
+        const data = await response.json()
+        setFreeDeployInfo(data)
+      } catch (err) {
+        console.error('Error fetching free deploy info:', err)
+      }
+    }
+    fetchFreeDeployInfo()
+  }, [])
   const features = [
     {
       icon: <MousePointerClick />,
@@ -38,6 +55,20 @@ function Home() {
 
   return (
     <div className="home">
+      {/* Free Deploy Promo Banner */}
+      {freeDeployInfo?.is_active && freeDeployInfo?.remaining > 0 && (
+        <div className="promo-banner">
+          <Gift size={18} />
+          <span>
+            <strong>{freeDeployInfo.remaining} free trial{freeDeployInfo.remaining !== 1 ? 's' : ''} left!</strong>
+            {' '}Get 1 week of hosting free - no payment required.
+          </span>
+          <Link to="/create" className="btn btn-success btn-small">
+            Claim Now
+          </Link>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="hero">
         <motion.div

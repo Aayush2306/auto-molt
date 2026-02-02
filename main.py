@@ -50,11 +50,43 @@ class DeploymentModel(Base):
     dashboard_url = Column(String, nullable=True)
     expires_at = Column(DateTime, nullable=True)  # 7 days after creation
     error_message = Column(Text, nullable=True)
+    is_free_deploy = Column(Integer, default=0)  # 1 if this was a free deploy
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Free deploy promotion config
+class FreeDeployConfig(Base):
+    __tablename__ = "free_deploy_config"
+
+    id = Column(Integer, primary_key=True)
+    total_free_deploys = Column(Integer, default=10)  # Total free deploys available
+    claimed_count = Column(Integer, default=0)  # How many have been claimed
+    is_active = Column(Integer, default=1)  # 1 = active, 0 = ended
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Initialize free deploy config if not exists
+def init_free_deploy_config():
+    db = SessionLocal()
+    try:
+        config = db.query(FreeDeployConfig).first()
+        if not config:
+            config = FreeDeployConfig(
+                total_free_deploys=10,
+                claimed_count=0,
+                is_active=1
+            )
+            db.add(config)
+            db.commit()
+            logger.info("Initialized free deploy config: 10 free deploys available")
+    finally:
+        db.close()
+
+init_free_deploy_config()
 
 app = FastAPI(title="AutoClaw - OpenClaw Provisioning Platform")
 
@@ -91,6 +123,7 @@ class ProvisionRequest(BaseModel):
     payment_signature: Optional[str] = Field(None, description="Payment transaction signature")
     user_email: Optional[str] = Field(None, description="User email for notifications")
     region: str = Field("nyc3", description="DigitalOcean region")
+    use_free_deploy: bool = Field(False, description="Whether to use a free deploy slot")
 
 class ProvisionResponse(BaseModel):
     deployment_id: str
@@ -526,6 +559,16 @@ async def provision_openclaw(request: ProvisionRequest, background_tasks: Backgr
         # Create deployment record in database
         db = SessionLocal()
         try:
+            is_free_deploy = 0
+
+            # Check if user wants to use a free deploy
+            if request.use_free_deploy:
+                if claim_free_deploy(db):
+                    is_free_deploy = 1
+                    logger.info(f"Deployment {deployment_id} is using a free deploy slot")
+                else:
+                    raise HTTPException(status_code=400, detail="No free deploys available")
+
             deployment = DeploymentModel(
                 deployment_id=deployment_id,
                 status='pending',
@@ -535,6 +578,7 @@ async def provision_openclaw(request: ProvisionRequest, background_tasks: Backgr
                 user_email=request.user_email,
                 region=request.region,
                 expires_at=datetime.utcnow() + timedelta(days=7),  # 7 days hosting
+                is_free_deploy=is_free_deploy,
             )
             db.add(deployment)
             db.commit()
@@ -763,6 +807,57 @@ async def root():
         "status": "running",
         "version": "1.0.0"
     }
+
+
+@app.get("/free-deploys")
+async def get_free_deploys():
+    """
+    Get the status of free deploy promotion
+    """
+    db = SessionLocal()
+    try:
+        config = db.query(FreeDeployConfig).first()
+        if not config:
+            return {
+                "is_active": False,
+                "total": 0,
+                "claimed": 0,
+                "remaining": 0
+            }
+
+        remaining = max(0, config.total_free_deploys - config.claimed_count)
+        is_active = config.is_active == 1 and remaining > 0
+
+        return {
+            "is_active": is_active,
+            "total": config.total_free_deploys,
+            "claimed": config.claimed_count,
+            "remaining": remaining
+        }
+    finally:
+        db.close()
+
+
+def claim_free_deploy(db) -> bool:
+    """
+    Try to claim a free deploy. Returns True if successful.
+    """
+    config = db.query(FreeDeployConfig).first()
+    if not config:
+        return False
+
+    if config.is_active != 1:
+        return False
+
+    if config.claimed_count >= config.total_free_deploys:
+        return False
+
+    config.claimed_count += 1
+    config.updated_at = datetime.utcnow()
+    db.commit()
+
+    logger.info(f"Free deploy claimed! {config.claimed_count}/{config.total_free_deploys} used")
+    return True
 
 
 if __name__ == "__main__":

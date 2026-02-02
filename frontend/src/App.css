@@ -1625,3 +1625,95 @@ a:hover {
     height: 40px;
   }
 }
+
+/* ============================================
+   FREE DEPLOY BANNER
+   ============================================ */
+.free-deploy-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0, 229, 204, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--border-radius);
+  margin-bottom: 24px;
+}
+
+.free-deploy-banner svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.free-deploy-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.free-deploy-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.free-deploy-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: #0da36e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Home page free deploy banner */
+.promo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 204, 0.15));
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.promo-banner svg {
+  color: var(--success);
+}
+
+.promo-banner strong {
+  color: var(--success);
+}
+
+@media (max-width: 768px) {
+  .free-deploy-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .free-deploy-info {
+    align-items: center;
+  }
+}
