@@ -39,7 +39,7 @@ function Home() {
     {
       icon: <CreditCard />,
       title: 'Pay with Crypto',
-      description: 'Simple weekly pricing at 0.005 ETH on Base. No subscriptions, cancel anytime'
+      description: 'Simple weekly pricing at 0.1 SOL on Solana. No subscriptions, cancel anytime'
     },
     {
       icon: <Shield />,
@@ -107,8 +107,8 @@ function Home() {
 
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-value">0.005</span>
-              <span className="stat-label">ETH / Week</span>
+              <span className="stat-value">0.1</span>
+              <span className="stat-label">SOL / Week</span>
             </div>
             <div className="stat-divider" />
             <div className="stat">
@@ -117,7 +117,7 @@ function Home() {
             </div>
             <div className="stat-divider" />
             <div className="stat">
-              <span className="stat-value">Base</span>
+              <span className="stat-value">Solana</span>
               <span className="stat-label">Network</span>
             </div>
           </div>
@@ -143,7 +143,7 @@ function Home() {
                 <span className="prompt">1.</span> Connect wallet
               </div>
               <div className="terminal-line success">
-                <span className="prompt">2.</span> Pay 0.005 ETH
+                <span className="prompt">2.</span> Pay 0.1 SOL
               </div>
               <div className="terminal-line success">
                 <span className="prompt">3.</span> Paste API key
@@ -210,7 +210,7 @@ function Home() {
           >
             <div className="step-number">1</div>
             <h3>Connect Wallet</h3>
-            <p>Link your wallet on Base network</p>
+            <p>Link your Solana wallet</p>
           </motion.div>
 
           <div className="step-arrow">→</div>
@@ -224,7 +224,7 @@ function Home() {
           >
             <div className="step-number">2</div>
             <h3>Pay & Paste</h3>
-            <p>0.005 ETH + your Anthropic API key</p>
+            <p>0.1 SOL + your Anthropic API key</p>
           </motion.div>
 
           <div className="step-arrow">→</div>

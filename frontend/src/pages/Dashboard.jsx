@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAccount } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { motion } from 'framer-motion'
 import {
   Server,
@@ -20,24 +20,26 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function Dashboard() {
-  const { address, isConnected } = useAccount()
+  const { publicKey, connected } = useWallet()
   const [deployments, setDeployments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const walletAddress = publicKey?.toBase58()
+
   useEffect(() => {
-    if (isConnected && address) {
+    if (connected && walletAddress) {
       fetchDeployments()
     } else {
       setLoading(false)
     }
-  }, [isConnected, address])
+  }, [connected, walletAddress])
 
   const fetchDeployments = async () => {
     try {
       setLoading(true)
       const response = await fetch(
-        `${API_URL}/deployments?wallet=${address}`
+        `${API_URL}/deployments?wallet=${walletAddress}`
       )
       const data = await response.json()
       setDeployments(data.deployments || [])
@@ -84,7 +86,7 @@ function Dashboard() {
     }
   }
 
-  if (!isConnected) {
+  if (!connected) {
     return (
       <div className="dashboard-page">
         <div className="dashboard-container">
@@ -97,8 +99,8 @@ function Dashboard() {
               <Wallet size={48} />
             </div>
             <h2>Connect Your Wallet</h2>
-            <p>Connect your wallet to view your deployments</p>
-            <ConnectButton />
+            <p>Connect your Solana wallet to view your deployments</p>
+            <WalletMultiButton />
           </motion.div>
         </div>
       </div>
@@ -248,7 +250,7 @@ function Dashboard() {
         )}
 
         <div className="wallet-info">
-          <span>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
+          <span>Connected: {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}</span>
         </div>
       </div>
     </div>

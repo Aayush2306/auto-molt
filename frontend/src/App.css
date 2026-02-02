@@ -331,11 +331,41 @@ a:hover {
   display: none;
 }
 
-/* RainbowKit Overrides */
-[data-rk] {
-  --rk-colors-accentColor: #ff4d4d !important;
-  --rk-colors-connectButtonBackground: rgba(255, 77, 77, 0.1) !important;
-  --rk-colors-modalBackground: rgba(17, 24, 39, 0.98) !important;
+/* Solana Wallet Adapter Overrides */
+.wallet-adapter-button {
+  background: var(--gradient-primary) !important;
+  border-radius: var(--border-radius) !important;
+  font-weight: 600 !important;
+  height: auto !important;
+  padding: 12px 24px !important;
+}
+
+.wallet-adapter-button:hover {
+  background: var(--gradient-primary) !important;
+  opacity: 0.9;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+.wallet-adapter-modal-container {
+  background: var(--bg-card-solid) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-lg) !important;
+}
+
+.wallet-adapter-modal-title {
+  color: var(--text-primary) !important;
+}
+
+.wallet-adapter-modal-list li {
+  background: var(--bg-glass) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+.wallet-adapter-modal-list li:hover {
+  background: var(--bg-glass-hover) !important;
 }
 
 /* ============================================

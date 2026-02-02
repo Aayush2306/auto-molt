@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther } from 'viem'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { motion } from 'framer-motion'
 import { Key, Loader2, CheckCircle, XCircle, ArrowRight, Wallet, Zap, Gift } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || '0x0000000000000000000000000000000000000000'
-const HOSTING_PRICE_ETH = '0.005'
+const PAYMENT_WALLET = import.meta.env.VITE_PAYMENT_WALLET || ''
+const HOSTING_PRICE_SOL = 0.1
 const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
 function Create() {
   const navigate = useNavigate()
-  const { address, isConnected } = useAccount()
-  const { data: hash, sendTransaction, isPending: isSending } = useSendTransaction()
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+  const { publicKey, connected, sendTransaction } = useWallet()
+  const { connection } = useConnection()
 
   const [step, setStep] = useState(1)
   const [apiKey, setApiKey] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState('')
   const [deploymentId, setDeploymentId] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState(null)
@@ -43,19 +43,12 @@ function Create() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && step === 1) {
+    if (connected && step === 1) {
       setStep(2)
-    } else if (!isConnected && step > 1) {
+    } else if (!connected && step > 1) {
       setStep(1)
     }
-  }, [isConnected, step])
-
-  useEffect(() => {
-    if (isConfirmed && hash) {
-      setPaymentHash(hash)
-      setStep(3)
-    }
-  }, [isConfirmed, hash])
+  }, [connected, step])
 
   useEffect(() => {
     if (!deploymentId || step !== 4) return
@@ -99,7 +92,7 @@ function Create() {
   }, [deploymentId, step])
 
   const handlePayment = async () => {
-    if (!address) return
+    if (!publicKey || !PAYMENT_WALLET) return
     setError('')
 
     // Test mode - skip actual payment
@@ -110,12 +103,34 @@ function Create() {
     }
 
     try {
-      sendTransaction({
-        to: PAYMENT_WALLET,
-        value: parseEther(HOSTING_PRICE_ETH)
-      })
+      setIsSending(true)
+
+      const recipientPubKey = new PublicKey(PAYMENT_WALLET)
+      const lamports = HOSTING_PRICE_SOL * LAMPORTS_PER_SOL
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: recipientPubKey,
+          lamports: lamports
+        })
+      )
+
+      const { blockhash } = await connection.getLatestBlockhash()
+      transaction.recentBlockhash = blockhash
+      transaction.feePayer = publicKey
+
+      const signature = await sendTransaction(transaction, connection)
+
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed')
+
+      setPaymentHash(signature)
+      setStep(3)
     } catch (err) {
       setError('Payment failed: ' + err.message)
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -140,7 +155,7 @@ function Create() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           anthropic_api_key: apiKey,
-          wallet_address: address,
+          wallet_address: publicKey?.toBase58(),
           payment_signature: paymentHash,
           region: 'nyc3',
           use_free_deploy: useFreeDeploy
@@ -226,9 +241,9 @@ function Create() {
                 <Wallet size={32} />
               </div>
               <h2>Connect Your Wallet</h2>
-              <p>Connect your wallet to continue with Base network</p>
+              <p>Connect your Solana wallet to continue</p>
               <div className="connect-wrapper">
-                <ConnectButton />
+                <WalletMultiButton />
               </div>
             </motion.div>
           )}
@@ -262,10 +277,10 @@ function Create() {
               <div className="payment-header">
                 <span className="payment-label">Weekly Hosting</span>
                 <div className="price-display">
-                  <span className="price-amount">0.005</span>
-                  <span className="price-currency">ETH</span>
+                  <span className="price-amount">0.1</span>
+                  <span className="price-currency">SOL</span>
                 </div>
-                <span className="price-network">on Base</span>
+                <span className="price-network">on Solana</span>
               </div>
 
               <ul className="payment-features">
@@ -278,16 +293,16 @@ function Create() {
               <button
                 className="btn btn-primary btn-large btn-full"
                 onClick={handlePayment}
-                disabled={isSending || isConfirming}
+                disabled={isSending}
               >
-                {isSending || isConfirming ? (
+                {isSending ? (
                   <>
                     <Loader2 className="spin" size={20} />
-                    {isConfirming ? 'Confirming...' : 'Processing...'}
+                    Processing...
                   </>
                 ) : (
                   <>
-                    {TEST_MODE ? 'Continue (Test Mode)' : 'Pay 0.005 ETH'}
+                    {TEST_MODE ? 'Continue (Test Mode)' : 'Pay 0.1 SOL'}
                     <ArrowRight size={20} />
                   </>
                 )}
