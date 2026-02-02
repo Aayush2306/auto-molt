@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings, ArrowRight, Gift } from 'lucide-react'
+import { Server, Shield, Zap, Clock, MousePointerClick, Sparkles, CreditCard, Headphones, Cloud, Settings, ArrowRight, Gift, Twitter } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -302,11 +302,21 @@ function Home() {
       {/* Footer */}
       <footer className="footer">
         <div className="footer-content">
-          <div className="footer-brand">
-            <img src="/logo.png" alt="AutoClaw" />
-            <span className="gradient-text">AutoClaw</span>
+          <div className="footer-main">
+            <div className="footer-brand">
+              <img src="/logo.png" alt="AutoClaw" />
+              <span className="gradient-text">AutoClaw</span>
+            </div>
+            <a
+              href="https://x.com/autoclawdeploy"
+              target="_blank"
+              rel="noreferrer"
+              className="footer-social"
+            >
+              <Twitter size={20} />
+            </a>
           </div>
-          <p>No-code OpenClaw hosting on Base</p>
+          <p className="footer-copyright">&copy; 2026 AutoClaw. All rights reserved.</p>
         </div>
       </footer>
     </div>

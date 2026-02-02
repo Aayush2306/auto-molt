@@ -739,14 +739,25 @@ a:hover {
   z-index: 1;
 }
 
-.footer-brand {
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-main {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
   gap: 12px;
   font-size: 20px;
   font-weight: 700;
-  margin-bottom: 12px;
 }
 
 .footer-brand img {
@@ -755,7 +766,27 @@ a:hover {
   border-radius: 8px;
 }
 
-.footer p {
+.footer-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.footer-social:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-color-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.footer-copyright {
   color: var(--text-muted);
   font-size: 14px;
 }
